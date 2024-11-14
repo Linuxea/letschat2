@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.io Client Test</title>
+    <!-- 引入 socket.io-client -->
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+</head>
+<body>
+<h1>Socket.io Client Test</h1>
+<div id="status">Status: Disconnected</div>
+<div id="messages"></div>
+<input type="text" id="messageInput" placeholder="Type a message">
+<button onclick="sendMessage()">Send Message</button>
+
+<script>
+    // 1. 连接到 Socket.io 服务器
+    const socket = io('http://localhost:9092'); // 这里使用本地地址，替换为你的服务器地址
+
+    // 2. 当成功连接时更新状态
+    socket.on('connect', () => {
+        document.getElementById('status').textContent = 'Status: Connected';
+        console.log('Connected to Socket.io server');
+    });
+
+    // 3. 接收消息事件
+    socket.on('receiveMessage', (data) => {
+        const messagesDiv = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.textContent = `Server: ${data}`;
+        messagesDiv.appendChild(messageElement);
+    });
+
+    // 4. 断开连接时更新状态
+    socket.on('disconnect', () => {
+        document.getElementById('status').textContent = 'Status: Disconnected';
+        console.log('Disconnected from Socket.io server');
+    });
+
+    // 5. 发送消息到服务器
+    function sendMessage() {
+        const message = document.getElementById('messageInput').value;
+        socket.emit('sendMessage', message); // 发送消息事件
+        document.getElementById('messageInput').value = '';
+        const messagesDiv = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.textContent = `You: ${message}`;
+        messagesDiv.appendChild(messageElement);
+    }
+</script>
+</body>
+</html>
