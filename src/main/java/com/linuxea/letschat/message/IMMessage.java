@@ -4,17 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class IMMessage {
 
-    private Long fromUserId;
+    private String fromSessionId;
 
-    private Long toUserId;
+    private String toSessionId;
 
-    private List<String> message;
+    private String payload;
 
 }

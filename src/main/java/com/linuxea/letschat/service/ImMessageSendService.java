@@ -16,10 +16,12 @@ public class ImMessageSendService {
     private final RabbitTemplate rabbitTemplate;
     private final RabbitMQConfiguration rabbitMQConfiguration;
 
-    public void send(String sessionId, IMMessage message) {
-        IMMqMessage mqMessage = new IMMqMessage(sessionId, message);
-        rabbitTemplate.convertAndSend(rabbitMQConfiguration.exchangeName(), rabbitMQConfiguration.routingKey(), mqMessage);
-        log.info("Send message: {} to sessionId: {}", message, sessionId);
+    public void send(String toRoutingKey, IMMessage message) {
+        if (toRoutingKey != null) {
+            IMMqMessage mqMessage = new IMMqMessage();
+            mqMessage.setImMessage(message);
+            rabbitTemplate.convertAndSend(rabbitMQConfiguration.exchangeName(), toRoutingKey, mqMessage);
+        }
     }
 
 }

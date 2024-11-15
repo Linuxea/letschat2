@@ -6,10 +6,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Data
-@ConfigurationProperties(prefix = "im.rabbitmq")
+@ConfigurationProperties(prefix = "im.rabbitmq.server")
 public class IMRabbitMQConfig {
 
-    private String server;
-
+    private String id;
 
 }
