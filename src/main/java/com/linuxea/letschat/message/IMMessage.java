@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatMessage {
+public class IMMessage {
 
     private Long fromUserId;
 
