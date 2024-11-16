@@ -1,11 +1,13 @@
 package com.linuxea.letschat.util;
 
 import com.corundumstudio.socketio.SocketIOClient;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Getter
 @Service
 public class SocketIOClientService {
 
@@ -25,10 +27,6 @@ public class SocketIOClientService {
 
     public boolean hasClient(String sessionId) {
         return clientMap.containsKey(sessionId);
-    }
-
-    public Map<String, SocketIOClient> getClientMap() {
-        return clientMap;
     }
 
 

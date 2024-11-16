@@ -4,10 +4,12 @@ import com.corundumstudio.socketio.SocketIOServer;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Order(1)
 public class SocketIOService implements CommandLineRunner {
 
     private final SocketIOServer socketIOServer;

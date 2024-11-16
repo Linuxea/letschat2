@@ -3,50 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.io Client Test</title>
-    <!-- 引入 socket.io-client -->
-    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <title>Chat Application</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f9f9f9;
+        }
+
+        #sidebar {
+            width: 25%;
+            background-color: #343a40;
+            color: #fff;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        #sidebar h2 {
+            margin-top: 0;
+        }
+
+        #sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #sidebar li {
+            padding: 10px;
+            border-bottom: 1px solid #495057;
+            cursor: pointer;
+        }
+
+        #sidebar li:hover {
+            background-color: #495057;
+        }
+
+        #chat-container {
+            width: 75%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 15px;
+        }
+
+        #messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #e9ecef;
+        }
+
+        #messages div {
+            margin-bottom: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .message.sent {
+            background-color: #d1e7dd;
+            text-align: right;
+        }
+
+        .message.received {
+            background-color: #f8d7da;
+            text-align: left;
+        }
+
+        #input-container {
+            display: flex;
+            padding: 15px;
+            background-color: #f1f3f5;
+        }
+
+        #input-container input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+
+        #input-container button {
+            margin-left: 10px;
+            padding: 10px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #input-container button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-<h1>Socket.io Client Test</h1>
-<div id="status">Status: Disconnected</div>
-<div id="messages"></div>
-<input type="text" id="messageInput" placeholder="Type a message">
-<button onclick="sendMessage()">Send Message</button>
+<div id="sidebar">
+    <h2>Online Friends</h2>
+    <ul id="friend-list"></ul>
+</div>
+<div id="chat-container">
+    <div id="chat-header">Select a friend to start chatting</div>
+    <div id="messages"></div>
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="Type a message..." disabled>
+        <button id="send-button" disabled>Send</button>
+    </div>
+</div>
 
 <script>
-    // 1. 连接到 Socket.io 服务器
-    const socket = io('http://localhost:9092'); // 这里使用本地地址，替换为你的服务器地址
+    const socket = io('http://43.202.53.30:9092', {
+        transports: ['websocket']
+    }); // Change to your server URL
+    const friendList = document.getElementById('friend-list');
+    const chatHeader = document.getElementById('chat-header');
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
 
-    // 2. 当成功连接时更新状态
-    socket.on('connect', () => {
-        document.getElementById('status').textContent = 'Status: Connected';
-        console.log('Connected to Socket.io server');
+    let selectedFriend = null;
+    let mySessionId = null;
+
+    // Polling online friends
+    setInterval(() => {
+        fetch('http://43.202.53.30:8080/chat/online-friends?sessionId=' + mySessionId) // Replace with your API endpoint
+            .then(response => response.json())
+            .then(data => {
+                friendList.innerHTML = '';
+                data.forEach(friend => {
+                    const li = document.createElement('li');
+                    li.textContent = friend.name;
+                    li.dataset.id = friend.id;
+                    li.addEventListener('click', () => selectFriend(friend));
+                    friendList.appendChild(li);
+                });
+            })
+            .catch(console.error);
+    }, 5000); // Poll every 5 seconds
+
+    // Select a friend to chat with
+    function selectFriend(friend) {
+        selectedFriend = friend;
+        chatHeader.textContent = `Chatting with ${friend.name}`;
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        messagesDiv.innerHTML = ''; // Clear chat history for the new friend
+    }
+
+    // Send message
+    sendButton.addEventListener('click', () => {
+        if (messageInput.value.trim() && selectedFriend) {
+            const chatMessage = {
+                toSessionId: selectedFriend.id,
+                payload: messageInput.value.trim()
+            };
+            socket.emit('sendMessage', JSON.stringify(chatMessage));
+            addMessageToChat('sent', messageInput.value.trim());
+            messageInput.value = '';
+        }
     });
 
-    // 3. 接收消息事件
-    socket.on('receiveMessage', (data) => {
-        const messagesDiv = document.getElementById('messages');
-        const messageElement = document.createElement('div');
-        messageElement.textContent = `Server: ${data}`;
-        messagesDiv.appendChild(messageElement);
+    //message input add enter key event
+    messageInput.addEventListener('keyup', function(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            sendButton.click();
+        }
     });
 
-    // 4. 断开连接时更新状态
-    socket.on('disconnect', () => {
-        document.getElementById('status').textContent = 'Status: Disconnected';
-        console.log('Disconnected from Socket.io server');
+    // Receive messages
+    socket.on('receiveMessage', (message) => {
+        const payload = JSON.parse(message);
+        console.log('Received message:', payload);
+        if (selectedFriend && selectedFriend.id === payload.fromSessionId) {
+            addMessageToChat('received', payload.payload);
+        }
     });
 
-    // 5. 发送消息到服务器
-    function sendMessage() {
-        const message = document.getElementById('messageInput').value;
-        socket.emit('sendMessage', message); // 发送消息事件
-        document.getElementById('messageInput').value = '';
-        const messagesDiv = document.getElementById('messages');
-        const messageElement = document.createElement('div');
-        messageElement.textContent = `You: ${message}`;
-        messagesDiv.appendChild(messageElement);
+    socket.on('sendSessionId', (message) => {
+        mySessionId = message;
+    });
+
+    // Add message to chat
+    function addMessageToChat(type, message) {
+        const div = document.createElement('div');
+        div.textContent = message;
+        div.className = `message ${type}`;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll
     }
 </script>
 </body>

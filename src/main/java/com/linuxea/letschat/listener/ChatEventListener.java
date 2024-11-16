@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -23,7 +22,6 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@DependsOn({"sessionService", "socketIOClientService", "imMessageSendService", "jsonUtil", "rabbitMQConfiguration"})
 public class ChatEventListener implements InitializingBean, DisposableBean {
 
     private final SessionService sessionService;
@@ -38,7 +36,7 @@ public class ChatEventListener implements InitializingBean, DisposableBean {
         log.info("Client connected: {}", client.getSessionId());
         socketIOClientService.addClient(client.getSessionId().toString(), client);
         sessionService.setSession2RouteKey(client.getSessionId().toString(), rabbitMQConfiguration.routingKey());
-        client.sendEvent("receiveMessage", "Welcome to Let's Chat! Your sessionId is: " + client.getSessionId());
+        client.sendEvent("sendSessionId", client.getSessionId());
     }
 
     // 客户端断开连接时触发
